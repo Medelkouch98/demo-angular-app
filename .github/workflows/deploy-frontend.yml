@@ -35,7 +35,7 @@ jobs:
           debug: true
 
       - name: Verify Uploaded File on EC2
-        uses: appleboy/ssh-action@v0.1.5
+        uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
@@ -45,7 +45,7 @@ jobs:
             file ~/demo-angular-app.tar
 
       - name: Deploy Docker Container on EC2
-        uses: appleboy/ssh-action@v0.1.5
+        uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
