@@ -1,0 +1,39 @@
+name: Deploy Frontend to EC2
+
+on:
+  push:
+    branches: [ develop ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Build Docker Image for Frontend
+        run: docker build -t demo-angular-app:latest .
+
+      - name: Save Docker Image as Tarball
+        run: docker save demo-angular-app:latest -o demo-angular-app.tar
+
+      - name: Upload Docker Image to EC2
+        uses: appleboy/scp-action@v0.1.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "demo-angular-app.tar"
+          target: "~/demo-angular-app.tar"
+
+      - name: Deploy Docker Container on EC2
+        uses: appleboy/ssh-action@v0.1.5
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            docker load -i ~/demo-angular-app.tar
+            docker stop demo-angular-app || true && docker rm demo-angular-app || true
+            docker run -d --name demo-angular-app -p 80:80 demo-angular-app:latest
