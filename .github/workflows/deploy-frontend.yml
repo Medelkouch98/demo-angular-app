@@ -26,6 +26,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "demo-angular-app.tar"
           target: "~/demo-angular-app.tar"
+          debug: true
 
       - name: Deploy Docker Container on EC2
         uses: appleboy/ssh-action@v0.1.5
