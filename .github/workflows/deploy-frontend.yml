@@ -31,7 +31,7 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "demo-angular-app.tar"
-          target: "/home/ubuntu/demo-angular-app.tar"
+          target: "~/demo-angular-app.tar"
           debug: true
 
       - name: Verify Uploaded File on EC2
@@ -41,8 +41,9 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            echo "Checking uploaded file..."
+            echo "Verifying uploaded file..."
             chmod 644 demo-angular-app.tar
+            echo "Checking uploaded file..."
             ls -lh demo-angular-app.tar
             file demo-angular-app.tar
 
@@ -56,6 +57,7 @@ jobs:
             if [ -f demo-angular-app.tar ]; then
               echo "Loading Docker image from tarball..."
               docker load -i demo-angular-app.tar
+              echo "Listing Docker images..."
               docker images
             else
               echo "Error: demo-angular-app.tar is not a valid file."
