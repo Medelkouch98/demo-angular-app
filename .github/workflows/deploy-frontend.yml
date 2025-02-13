@@ -19,7 +19,7 @@ jobs:
         run: docker save demo-angular-app:latest -o demo-angular-app.tar
 
       - name: Upload Docker Image to EC2
-        uses: appleboy/scp-action@v0.1.0
+        uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
