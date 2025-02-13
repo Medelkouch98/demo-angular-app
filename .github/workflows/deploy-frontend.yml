@@ -52,13 +52,14 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            if [ -f /home/ubuntu/demo-angular-app.tar ]; then
+            chmod 644 ~/demo-angular-app.tar
+            if [ -f ~/demo-angular-app.tar ]; then
               echo "Loading Docker image from tarball..."
-              docker load -i /home/ubuntu/demo-angular-app.tar
+              docker load -i ~/demo-angular-app.tar
               echo "Listing Docker images..."
               docker images
             else
-              echo "Error: /home/ubuntu/demo-angular-app.tar is not a valid file."
+              echo "Error: ~/demo-angular-app.tar is not a valid file."
               exit 1
             fi
             echo "Stopping and removing existing container..."
