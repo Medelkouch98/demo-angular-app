@@ -42,10 +42,10 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             echo "Verifying uploaded file..."
-            chmod 644 demo-angular-app.tar
+            chmod 644 demo-angular-app.tar/demo-angular-app.tar
             echo "Checking uploaded file..."
-            ls -lh demo-angular-app.tar
-            file demo-angular-app.tar
+            ls -lh demo-angular-app.tar/demo-angular-app.tar
+            file demo-angular-app.tar/demo-angular-app.tar
 
       - name: Deploy Docker Container on EC2
         uses: appleboy/ssh-action@master
