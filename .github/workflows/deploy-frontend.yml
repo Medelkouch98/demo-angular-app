@@ -22,7 +22,7 @@ jobs:
           docker save demo-angular-app:latest -o demo-angular-app.tar
           chmod 644 demo-angular-app.tar
           ls -lh demo-angular-app.tar
-          tar -tvf demo-angular-app.tar
+          file demo-angular-app.tar
 
       - name: Upload Docker Image to EC2
         uses: appleboy/scp-action@master
@@ -51,7 +51,12 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            docker load -i ~/demo-angular-app.tar
-            docker images
+            if [ -f ~/demo-angular-app.tar ]; then
+              docker load -i ~/demo-angular-app.tar
+              docker images
+            else
+              echo "Error: ~/demo-angular-app.tar is not a valid file."
+              exit 1
+            fi
             docker stop demo-angular-app || true && docker rm demo-angular-app || true
             docker run -d --name demo-angular-app -p 80:80 demo-angular-app:latest
