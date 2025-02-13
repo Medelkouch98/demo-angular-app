@@ -20,6 +20,7 @@ jobs:
       - name: Save Docker Image as Tarball
         run: |
           docker save demo-angular-app:latest -o demo-angular-app.tar
+          chmod 644 demo-angular-app.tar
           ls -lh demo-angular-app.tar
           tar -tvf demo-angular-app.tar
 
