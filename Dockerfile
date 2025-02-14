@@ -15,7 +15,7 @@ RUN npm install -g @angular/cli
 COPY . .
 
 # Expose the default Angular port
-EXPOSE 80
+EXPOSE 3000
 
 # Run the Angular development server with live reloading
 CMD ["ng", "serve", "--host", "0.0.0.0"]
