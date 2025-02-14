@@ -1,21 +1,18 @@
-# Use the official Node image
-FROM node:18
+# build the anguular app
+FROM node:20-alpine as build
 
-# Set the working directory
 WORKDIR /app
-
-# Copy package files and install dependencies
-COPY package*.json ./
-RUN npm install
-
-# Install Angular CLI globally (if not already installed)
-RUN npm install -g @angular/cli
-
-# Copy the rest of the application code
+COPY package*.json .
+RUN npm ci
 COPY . .
+RUN npm run build
 
-# Expose the default Angular port
-EXPOSE 4200
+# serve the angular app with nginx
+FROM nginx:1.23-alpine
+WORKDIR /usr/share/nginx/html
+RUN rm -rf *
 
-# Run the Angular development server with live reloading
-CMD ["ng", "serve", "--host", "0.0.0.0"]
+#copy the built angular app from the build stage
+COPY --from=build /app/dist/angular-app/browser .
+EXPOSE 80
+ENTRYPOINT [ "nginx", "-g", "daemon off;" ]
