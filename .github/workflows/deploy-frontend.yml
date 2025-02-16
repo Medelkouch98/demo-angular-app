@@ -1,8 +1,85 @@
-name: Deploy Frontend to EC2
+# name: Deploy Frontend to EC2
+
+# on:
+#   push:
+#     branches: [ develop ]
+
+# jobs:
+#   deploy:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       - name: Checkout Code
+#         uses: actions/checkout@v3
+
+#       - name: Build Docker Image for Frontend
+#         run: |
+#           docker build -t demo-angular-app:latest .
+#           docker images
+
+#       - name: Save Docker Image as Tarball
+#         run: |
+#           docker save demo-angular-app:latest -o demo-angular-app.tar
+#           chmod 644 demo-angular-app.tar
+#           ls -lh demo-angular-app.tar
+#           file demo-angular-app.tar
+
+#       - name: Upload Docker Image to EC2
+#         uses: appleboy/scp-action@master
+#         with:
+#           host: ${{ secrets.EC2_HOST }}
+#           username: ${{ secrets.EC2_USER }}
+#           key: ${{ secrets.SSH_PRIVATE_KEY }}
+#           source: "demo-angular-app.tar"
+#           target: "~/demo-angular-app.tar"
+#           debug: true
+
+#       - name: Verify Uploaded File on EC2
+#         uses: appleboy/ssh-action@master
+#         with:
+#           host: ${{ secrets.EC2_HOST }}
+#           username: ${{ secrets.EC2_USER }}
+#           key: ${{ secrets.SSH_PRIVATE_KEY }}
+#           script: |
+#             echo "Verifying uploaded file..."
+#             chmod 644 demo-angular-app.tar/demo-angular-app.tar
+#             echo "Checking uploaded file..."
+#             ls -lh demo-angular-app.tar/demo-angular-app.tar
+#             file demo-angular-app.tar/demo-angular-app.tar
+
+#       - name: Deploy Docker Container on EC2
+#         uses: appleboy/ssh-action@master
+#         with:
+#           host: ${{ secrets.EC2_HOST }}
+#           username: ${{ secrets.EC2_USER }}
+#           key: ${{ secrets.SSH_PRIVATE_KEY }}
+#           script: |
+#             if [ -f demo-angular-app.tar/demo-angular-app.tar ]; then
+#               echo "Loading Docker image from tarball..."
+#               docker load -i demo-angular-app.tar/demo-angular-app.tar
+#               echo "Listing Docker images..."
+#               docker images
+#             else
+#               echo "Error: demo-angular-app.tar is not a valid file."
+#               exit 1
+#             fi
+#             echo "Stopping and removing existing container..."
+#             docker stop demo-angular-app || true && docker rm demo-angular-app || true
+#             echo "Starting new container..."
+#             docker run -d --name demo-angular-app -p 4200:80 demo-angular-app:latest
+
+name: Deploy Frontend to S3 and CloudFront
 
 on:
   push:
     branches: [ develop ]
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  S3_BUCKET: ${{ secrets.S3_BUCKET }}
+  CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
 jobs:
   deploy:
@@ -12,58 +89,31 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Build Docker Image for Frontend
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build Application
+        run: npm run build -- --configuration production  # Replace with your build command
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy to S3
         run: |
-          docker build -t demo-angular-app:latest .
-          docker images
+          aws s3 sync ./dist/demo-angular-app s3://${{ env.S3_BUCKET }} --delete
+          # Replace `demo-angular-app` with your app's dist folder
 
-      - name: Save Docker Image as Tarball
+      - name: Invalidate CloudFront Cache
         run: |
-          docker save demo-angular-app:latest -o demo-angular-app.tar
-          chmod 644 demo-angular-app.tar
-          ls -lh demo-angular-app.tar
-          file demo-angular-app.tar
-
-      - name: Upload Docker Image to EC2
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "demo-angular-app.tar"
-          target: "~/demo-angular-app.tar"
-          debug: true
-
-      - name: Verify Uploaded File on EC2
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            echo "Verifying uploaded file..."
-            chmod 644 demo-angular-app.tar/demo-angular-app.tar
-            echo "Checking uploaded file..."
-            ls -lh demo-angular-app.tar/demo-angular-app.tar
-            file demo-angular-app.tar/demo-angular-app.tar
-
-      - name: Deploy Docker Container on EC2
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            if [ -f demo-angular-app.tar/demo-angular-app.tar ]; then
-              echo "Loading Docker image from tarball..."
-              docker load -i demo-angular-app.tar/demo-angular-app.tar
-              echo "Listing Docker images..."
-              docker images
-            else
-              echo "Error: demo-angular-app.tar is not a valid file."
-              exit 1
-            fi
-            echo "Stopping and removing existing container..."
-            docker stop demo-angular-app || true && docker rm demo-angular-app || true
-            echo "Starting new container..."
-            docker run -d --name demo-angular-app -p 4200:80 demo-angular-app:latest
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ env.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*"
