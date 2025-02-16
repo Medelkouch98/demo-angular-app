@@ -109,7 +109,7 @@ jobs:
 
       - name: Deploy to S3
         run: |
-          aws s3 sync ./dist/demo-angular-app s3://${{ env.S3_BUCKET }} --delete
+          aws s3 sync ./dist/demo-angular-app/browser s3://${{ env.S3_BUCKET }} --delete
           # Replace `demo-angular-app` with your app's dist folder
 
       - name: Invalidate CloudFront Cache
